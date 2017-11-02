@@ -1,0 +1,7 @@
+{
+    "name": "VariSlice",
+    "author": "Chris ter Beke",
+    "version": "1.0.0",
+    "description": "Adds VariSlice-like functionality to Cura.",
+    "api": 4
+}
