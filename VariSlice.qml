@@ -4,19 +4,37 @@
 import UM 1.1 as UM
 import QtQuick 2.2
 
-UM.Dialog {
-    id: base
+Item {
+    id: variSlice
 
     width: 200
     height: 200
-    minimumWidth: 200
-    minimumHeight: 200
 
     Text {
+        id: statusText
+
         anchors {
-            top: base.top
-            verticalCenter: base.verticalCenter
+            top: variSlice.top
         }
-        text: "VariSlice!"
+
+        text: UM.ActiveTool.properties.getValue("Processing") ? "Processing..." : "Analysis complete"
+    }
+
+    ListView {
+        id: layerInfoList
+
+        width: 200
+        height: 200
+
+        anchors {
+            top: statusText.bottom
+            verticalCenter: variSlice.verticalCenter
+        }
+
+        model: UM.ActiveTool.properties.getValue("LayerInfo")
+
+        delegate: Text {
+            text: layer_height
+        }
     }
 }

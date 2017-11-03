@@ -15,14 +15,13 @@ class VariSliceAlgorithm:
         # list of allowed layer heights sorted with tallest on top
         # TODO: make dynamic
         self._layer_steps = [
+            0.4,
             0.2,
-            0.15,
-            0.1,
-            0.06
+            0.1
         ]
 
         self._selected_model = selected_model  # type: SceneNode
-        self._triangles = []  # type: numpy.ndarray
+        self._triangles = None
         self._maximum_layer_height = None
         self._minimum_layer_height = None
 
@@ -38,16 +37,18 @@ class VariSliceAlgorithm:
         self._calculateMinAndMaxLayerHeights()
         return self._minimum_layer_height
 
+    @property
+    def triangles(self):
+        return self._triangles
+
     # Build the layers
     def buildLayers(self):
         self._selected_model.setCalculateBoundingBox(True)  # make sure the bounding box is calculated on the next line
         model_height = self._selected_model.getBoundingBox().height
         max_layers = int(model_height / self.minimumLayerHeight)
 
-        # temporary lists that hold triangles of interest
-        triangles_of_interest = []
         absolute_heights = []
-        triangles_in_layers = []
+        layer_output = []
 
         # keep track of current layer
         z_level = 0
@@ -57,19 +58,47 @@ class VariSliceAlgorithm:
             if layer_index != 0:
                 z_level = absolute_heights[layer_index - 1]
 
+            # we cache the triangles so we have a smaller set to check next layer step (making it faster)
+            triangles_cache = []
+            triangles_of_interest = []
+
             # loop over allowed layer heights to find intersecting triangles for consideration
             for layer_step in self._layer_steps:
-                triangles_of_interest.clear()
 
-                # loop over all triangles to find intersecting ones
-                for i, triangle in enumerate(self._triangles):
-                    if len(triangle) != 3:
-                        Logger.log("e", "Could not parse triangles from selected model: length was not 3")
-                        return
+                triangles_of_interest = triangles_cache
 
-                    is_triangle_interesting = VariSliceUtils.isTriangleInRangeOfInterest(triangle, z_level, z_level + layer_step)
+                if len(triangles_cache) == 0:
+                    # loop over all triangles to find intersecting ones
+                    for triangle in numpy.array(self._triangles):
+                        if len(triangle) != 3:
+                            Logger.log("e", "Could not parse triangles from selected model: length was not 3")
+                            return
 
-        return 0
+                        if VariSliceUtils.isTriangleInRangeOfInterest(triangle, z_level, z_level + layer_step):
+                            triangles_of_interest.append(triangle)
+
+                # cache the triangles for potential next iteration of layer steps
+                triangles_cache = triangles_of_interest
+
+                # get the minimum slope for interesting triangles
+                layer_slope = VariSliceUtils.findMinimumSlope(triangles_of_interest)
+
+                # create the layer when it is small enough or we're on the thinnest layer allowed
+                if VariSliceUtils.isValidLayerHeight(layer_slope, layer_step, 0.1) or layer_step == min(self._layer_steps):
+                    absolute_heights.append(z_level + layer_step)
+                    layer_output.append({
+                        "layer_height": layer_step,
+                        "absolute_height": z_level + layer_step,
+                        "layer_slope": layer_slope,
+                        "triangle_count": len(triangles_of_interest)
+                    })
+                    break
+
+            # break when we're out of triangles (top of model)
+            if len(triangles_of_interest) == 0:
+                break
+
+        return layer_output
 
     # Calculates triangles for selected model from vertices and indices
     def _calculateModelTriangles(self):
@@ -88,18 +117,31 @@ class VariSliceAlgorithm:
         vertices += translate
 
         # Convert from Y up axes to Z up axes. Equals a 90 degree rotation.
-        # verts[:, [1, 2]] = verts[:, [2, 1]]
-        # verts[:, 1] *= -1
+        vertices[:, [1, 2]] = vertices[:, [2, 1]]
+        vertices[:, 1] *= -1
 
         # Convert vertices and indices into triangles (faces)
-        indices = mesh_data.getIndices()
-        if indices is not None:
-            flat_verts = numpy.take(vertices, indices.flatten(), axis = 0)
+        if mesh_data.hasIndices():
+            for face in mesh_data.getIndices():
+                v1 = vertices[face[0]]
+                v2 = vertices[face[1]]
+                v3 = vertices[face[2]]
+                self._appendTriangle([v1, v2, v3])
         else:
-            flat_verts = numpy.array(vertices)
+            for index in range(0, len(vertices) - 1, 3):
+                v1 = vertices[index]
+                v2 = vertices[index + 1]
+                v3 = vertices[index + 2]
+                self._appendTriangle([v1, v2, v3])
 
-        # Cache the triangle data
-        self._triangles = flat_verts
+        return self._triangles
+
+    # Appends a triangle to cached triangles
+    def _appendTriangle(self, triangle):
+        if self._triangles is None:
+            self._triangles = [triangle]
+        else:
+            self._triangles.append(triangle)
 
     # calculates the minimum and maximum layer heights
     def _calculateMinAndMaxLayerHeights(self):

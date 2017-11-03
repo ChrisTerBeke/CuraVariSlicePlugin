@@ -1,45 +1,68 @@
 # Copyright (c) 2017 Ultimaker B.V.
 # This plugin is released under the terms of Creative Commons 3.0 or higher.
 
-import os.path
+import threading
 
-from PyQt5.QtCore import QUrl
-from PyQt5.QtQml import QQmlComponent
-
-from UM.Application import Application
+from UM.Signal import Signal
 from UM.Event import Event
 from UM.Scene.Selection import Selection
-from UM.PluginRegistry import PluginRegistry
 from UM.Tool import Tool
 
 from VariSliceAlgorithm import VariSliceAlgorithm
+from VariSliceLayersListModel import VariSliceLayersListModel
 
 class VariSlice(Tool):
 
     def __init__(self):
         super().__init__()
 
-        # the info window shows the regions that were created
-        self.info_window = None
+        # use separate thread for VariSlice algorithm otherwise we lock up the UI
+        self.__thread = None
 
-        # stores the VariSlice algorithm result for UI processing
-        self._layer_info = []
+        # the selected model to pass between threads
+        self._selected_model = None
+
+        # stores the VariSlice result for UI processing
+        self._layer_info = None
+
+        # stores the last algorithm instance
+        self._algorithm_instance = None
+
+        # expose properties to QML
+        self.setExposedProperties("LayerInfo", "Processing")
+
+        # notify update when finished processing in thread
+        self.finishedProcessing.connect(self._update)
+
+    finishedProcessing = Signal()
+
+    def getProcessing(self):
+        return self.__thread is not None
+
+    def getLayerInfo(self):
+        return self._layer_info
 
     def event(self, event):
         super().event(event)
 
-        if event.type == Event.MouseReleaseEvent and Selection.hasSelection():
+        if event.type == Event.MouseReleaseEvent or event.type == Event.ToolActivateEvent and Selection.hasSelection():
             self._run(Selection.getSelectedObject(0))
-            if not self.info_window:
-                self.info_window = self._createInfoWindow()
-            self.info_window.show()
 
     def _run(self, selected_model):
-        algorithm_instance = VariSliceAlgorithm(selected_model)
-        self._layer_info = algorithm_instance.buildLayers()
+        self._selected_model = selected_model
+        if self.__thread is None:
+            self.__thread = threading.Thread(target = self._variSlice, daemon = True)
+            self.__thread.start()
 
-    def _createInfoWindow(self):
-        qml_file = QUrl.fromLocalFile(os.path.join(PluginRegistry.getInstance().getPluginPath(self.getPluginId()), "VariSlice.qml"))
-        component = QQmlComponent(Application.getInstance().getQmlEngine(), qml_file)
-        qml_context = QQmlComponent(Application.getInstance().getQmlEngine().rootContext())
-        return component.create(qml_context)
+    def _update(self, layer_info):
+        self._layer_info = VariSliceLayersListModel(layer_info)
+        self.propertyChanged.emit()
+
+    def _variSlice(self):
+        print("Starting VariSlice...")
+        self._algorithm_instance = VariSliceAlgorithm(self._selected_model)
+        layer_info = self._algorithm_instance.buildLayers()
+        print("Finished VariSlice")
+        # print(layer_info)
+        self.finishedProcessing.emit(layer_info)
+        self.__thread = None
