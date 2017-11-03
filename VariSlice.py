@@ -7,8 +7,12 @@ from PyQt5.QtCore import QUrl
 from PyQt5.QtQml import QQmlComponent
 
 from UM.Application import Application
+from UM.Event import Event
+from UM.Scene.Selection import Selection
 from UM.PluginRegistry import PluginRegistry
 from UM.Tool import Tool
+
+from VariSliceAlgorithm import VariSliceAlgorithm
 
 class VariSlice(Tool):
 
@@ -16,12 +20,23 @@ class VariSlice(Tool):
         super().__init__()
 
         # the info window shows the regions that were created
-        self._info_window = None
+        self.info_window = None
 
-    def _regionsCreated(self):
-        if not self._info_window:
-            self._info_window = self._createInfoWindow()
-        self._info_window.show()
+        # stores the VariSlice algorithm result for UI processing
+        self._layer_info = []
+
+    def event(self, event):
+        super().event(event)
+
+        if event.type == Event.MouseReleaseEvent and Selection.hasSelection():
+            self._run(Selection.getSelectedObject(0))
+            if not self.info_window:
+                self.info_window = self._createInfoWindow()
+            self.info_window.show()
+
+    def _run(self, selected_model):
+        algorithm_instance = VariSliceAlgorithm(selected_model)
+        self._layer_info = algorithm_instance.buildLayers()
 
     def _createInfoWindow(self):
         qml_file = QUrl.fromLocalFile(os.path.join(PluginRegistry.getInstance().getPluginPath(self.getPluginId()), "VariSlice.qml"))
