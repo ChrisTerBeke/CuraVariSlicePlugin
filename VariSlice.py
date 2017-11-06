@@ -33,13 +33,14 @@ class VariSlice(Tool):
         ]
 
         # stores the VariSlice result for UI processing
-        self._layer_info = None
+        self._layer_info = []
+        self._meta_data = None
 
         # stores the last algorithm instance
         self._algorithm_instance = None
 
         # expose properties to QML
-        self.setExposedProperties("LayerInfo", "Processing")
+        self.setExposedProperties("LayerInfo", "ModelHeight", "MaxLayers", "TotalTriangles", "LayerSteps", "Processing")
 
         # notify update when finished processing in thread
         self.finishedProcessing.connect(self._onProcessingFinished)
@@ -51,6 +52,29 @@ class VariSlice(Tool):
 
     def getLayerInfo(self):
         return self._layer_info
+
+    def getMetaData(self):
+        return self._meta_data
+
+    def getModelHeight(self):
+        if not self._meta_data:
+            return ""
+        return self._meta_data["model_height"]
+
+    def getMaxLayers(self):
+        if not self._meta_data:
+            return ""
+        return self._meta_data["max_layers"]
+
+    def getTotalTriangles(self):
+        if not self._meta_data:
+            return ""
+        return self._meta_data["total_triangles"]
+
+    def getLayerSteps(self):
+        if not self._meta_data:
+            return ""
+        return self._meta_data["layer_steps"]
 
     def event(self, event):
         super().event(event)
@@ -64,18 +88,23 @@ class VariSlice(Tool):
             self.__thread = threading.Thread(target = self._variSlice, daemon = True)
             self.__thread.start()
 
-    def _onProcessingFinished(self, layer_info):
-        print("layer_info", layer_info)
-        self._layer_info = VariSliceLayersListModel(layer_info)
+    def _onProcessingFinished(self, vari_slice_output):
+        self._layer_info = VariSliceLayersListModel(vari_slice_output["layer_info"])
+        self._meta_data = {
+            "model_height": vari_slice_output["model_height"],
+            "max_layers": vari_slice_output["max_layers"],
+            "total_triangles": vari_slice_output["total_triangles"],
+            "layer_steps": ", ".join(map(str, vari_slice_output["layer_steps"]))
+        }
         self.propertyChanged.emit()
 
     def _variSlice(self):
         print("Starting VariSlice...")
         allowed_layer_heights = self._calculateAllowedLayerHeights()
         self._algorithm_instance = VariSliceAlgorithm(self._selected_model, allowed_layer_heights)
-        layer_info = self._algorithm_instance.buildLayers()
+        output = self._algorithm_instance.buildLayers()
         print("Finished VariSlice")
-        self.finishedProcessing.emit(layer_info)
+        self.finishedProcessing.emit(output)
         self.__thread = None
 
     # get list of allowed layer heights from available quality profiles

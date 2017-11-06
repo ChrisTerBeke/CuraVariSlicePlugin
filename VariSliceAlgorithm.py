@@ -97,7 +97,14 @@ class VariSliceAlgorithm:
             if len(triangles_of_interest) == 0:
                 break
 
-        return layer_output
+        # return all output data
+        return {
+            "layer_info": layer_output,
+            "model_height": str(model_height),
+            "max_layers": str(max_layers),
+            "total_triangles": str(len(self._triangles)),
+            "layer_steps": self._layer_steps
+        }
 
     # Calculates triangles for selected model from vertices and indices
     def _calculateModelTriangles(self):

@@ -20,6 +20,46 @@ Item {
         text: UM.ActiveTool.properties.getValue("Processing") ? "Processing..." : "Analysis complete"
     }
 
+    Text {
+        id: maxLayersText
+
+        anchors {
+            top: statusText.bottom
+        }
+
+        text: "Layers: " + layerInfoList.count + " (down from " + UM.ActiveTool.properties.getValue("MaxLayers") + ")"
+    }
+
+    Text {
+        id: modelHeightText
+
+        anchors {
+            top: maxLayersText.bottom
+        }
+
+        text: "Model height: " + UM.ActiveTool.properties.getValue("ModelHeight")
+    }
+
+    Text {
+        id: totalTrianglesText
+
+        anchors {
+            top: modelHeightText.bottom
+        }
+
+        text: "Triangles parsed: " + UM.ActiveTool.properties.getValue("TotalTriangles")
+    }
+
+    Text {
+        id: layerStepsText
+
+        anchors {
+            top: totalTrianglesText.bottom
+        }
+
+        text: "Layer steps used: " + UM.ActiveTool.properties.getValue("LayerSteps")
+    }
+
     ListView {
         id: layerInfoList
 
@@ -27,14 +67,13 @@ Item {
         height: 200
 
         anchors {
-            top: statusText.bottom
-            verticalCenter: variSlice.verticalCenter
+            top: layerStepsText.bottom
         }
 
         model: UM.ActiveTool.properties.getValue("LayerInfo")
 
         delegate: Text {
-            text: layer_height
+            text: index + ": " + layer_height
         }
     }
 }
