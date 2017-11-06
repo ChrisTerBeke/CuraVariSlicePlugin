@@ -55,7 +55,7 @@ class VariSliceAlgorithm:
         # loop over each potential layer
         for layer_index in range(0, max_layers):
             if layer_index != 0:
-                z_level = absolute_heights[layer_index - 1]
+                z_level = round(absolute_heights[layer_index - 1], 2)
 
             # we cache the triangles so we have a smaller set to check next layer step (making it faster)
             triangles_cache = []
@@ -86,10 +86,10 @@ class VariSliceAlgorithm:
                 if VariSliceUtils.isValidLayerHeight(layer_slope, layer_step, 0.1) or layer_step == min(self._layer_steps):
                     absolute_heights.append(z_level + layer_step)
                     layer_output.append({
-                        "layer_height": layer_step,
-                        "absolute_height": z_level + layer_step,
-                        "layer_slope": layer_slope,
-                        "triangle_count": len(triangles_of_interest)
+                        "layer_height": str(layer_step),
+                        "absolute_height": str(round(z_level + layer_step, 2)),
+                        "layer_slope": str(round(layer_slope, 2)),
+                        "triangle_count": str(len(triangles_of_interest))
                     })
                     break
 

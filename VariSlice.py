@@ -65,6 +65,7 @@ class VariSlice(Tool):
             self.__thread.start()
 
     def _onProcessingFinished(self, layer_info):
+        print("layer_info", layer_info)
         self._layer_info = VariSliceLayersListModel(layer_info)
         self.propertyChanged.emit()
 
@@ -74,7 +75,6 @@ class VariSlice(Tool):
         self._algorithm_instance = VariSliceAlgorithm(self._selected_model, allowed_layer_heights)
         layer_info = self._algorithm_instance.buildLayers()
         print("Finished VariSlice")
-        # print(layer_info)
         self.finishedProcessing.emit(layer_info)
         self.__thread = None
 

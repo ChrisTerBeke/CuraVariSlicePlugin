@@ -11,7 +11,7 @@ class VariSliceLayersListModel(ListModel):
     AbsoluteHeightRole = Qt.UserRole + 3
     TriangleCountRole = Qt.UserRole + 4
 
-    def __init__(self, layer_data = None):
+    def __init__(self, layer_data):
         super().__init__()
 
         self.addRoleName(self.LayerHeightRole, "layer_height")
