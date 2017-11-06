@@ -3,6 +3,8 @@
 
 import threading
 
+from PyQt5.QtCore import QVariant
+
 from UM.Application import Application
 from UM.Signal import Signal
 from UM.Event import Event
@@ -51,7 +53,7 @@ class VariSlice(Tool):
         return self.__thread is not None
 
     def getLayerInfo(self):
-        return self._layer_info
+        return QVariant(self._layer_info)
 
     def getModelHeight(self):
         if not self._meta_data:

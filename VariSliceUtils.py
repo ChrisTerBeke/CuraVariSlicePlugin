@@ -3,6 +3,8 @@
 
 import math
 
+import numpy
+
 from UM.Math.Vector import Vector
 
 class VariSliceUtils:
@@ -28,25 +30,36 @@ class VariSliceUtils:
 
         return False
 
+    @staticmethod
+    def findSlope(triangle):
+
+        print("triangle", triangle)
+
+        slope = max(numpy.angle(triangle))
+
+        # a = Vector(triangle[0][0], triangle[0][1], triangle[0][2])
+        # b = Vector(triangle[1][0], triangle[1][1], triangle[1][2])
+        # c = Vector(triangle[2][0], triangle[2][1], triangle[2][2])
+        #
+        # ab = b - a
+        # ac = c - a
+        # normal = ab.cross(ac)
+        # slope = Vector(0.0, 0.0, 1.0).angleToVector(normal)
+        #
+        # if slope > math.pi / 2:
+        #     # limit between -45 and +45 degrees
+        #     slope = int(math.pi - slope)
+
+        return slope
+
     # Finds the minimum slope in an ndarray of triangle vertices
     @staticmethod
     def findMinimumSlope(triangles):
         min_slope = 999
 
-        # TODO: make this part faster
         for triangle in triangles:
-            a = Vector(triangle[0][0], triangle[0][1], triangle[0][2])
-            b = Vector(triangle[1][0], triangle[1][1], triangle[1][2])
-            c = Vector(triangle[2][0], triangle[2][1], triangle[2][2])
+            slope = VariSliceUtils.findSlope(triangle)
 
-            ab = b - a
-            ac = c - a
-            normal = ab.cross(ac)
-            slope = Vector(0.0, 0.0, 1.0).angleToVector(normal)
-
-            if slope > math.pi / 2:
-                # limit between -45 and +45 degrees
-                slope = int(math.pi - slope)
             if slope < min_slope:
                 min_slope = slope
 
