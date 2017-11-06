@@ -3,6 +3,8 @@
 
 import threading
 
+from PyQt5.QtCore import pyqtSlot, QVariant
+
 from UM.Application import Application
 from UM.Signal import Signal
 from UM.Event import Event
@@ -50,8 +52,9 @@ class VariSlice(Tool):
     def getProcessing(self):
         return self.__thread is not None
 
+    @pyqtSlot(result = QVariant)
     def getLayerInfo(self):
-        return self._layer_info
+        return QVariant(self._layer_info)
 
     def getMetaData(self):
         return self._meta_data
