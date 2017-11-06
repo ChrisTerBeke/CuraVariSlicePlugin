@@ -3,8 +3,6 @@
 
 import threading
 
-from PyQt5.QtCore import pyqtSlot, QVariant
-
 from UM.Application import Application
 from UM.Signal import Signal
 from UM.Event import Event
@@ -35,29 +33,25 @@ class VariSlice(Tool):
         ]
 
         # stores the VariSlice result for UI processing
-        self._layer_info = []
+        self._layer_info = VariSliceLayersListModel()
         self._meta_data = None
 
         # stores the last algorithm instance
         self._algorithm_instance = None
 
-        # expose properties to QML
-        self.setExposedProperties("LayerInfo", "ModelHeight", "MaxLayers", "TotalTriangles", "LayerSteps", "Processing")
-
         # notify update when finished processing in thread
         self.finishedProcessing.connect(self._onProcessingFinished)
+
+        # expose needed QML properties
+        self.setExposedProperties("LayerInfo", "ModelHeight", "MaxLayers", "TotalTriangles", "LayerSteps")
 
     finishedProcessing = Signal()
 
     def getProcessing(self):
         return self.__thread is not None
 
-    @pyqtSlot(result = QVariant)
     def getLayerInfo(self):
-        return QVariant(self._layer_info)
-
-    def getMetaData(self):
-        return self._meta_data
+        return self._layer_info
 
     def getModelHeight(self):
         if not self._meta_data:
@@ -92,7 +86,7 @@ class VariSlice(Tool):
             self.__thread.start()
 
     def _onProcessingFinished(self, vari_slice_output):
-        self._layer_info = VariSliceLayersListModel(vari_slice_output["layer_info"])
+        self._layer_info.setLayerData(vari_slice_output["layer_info"])
         self._meta_data = {
             "model_height": vari_slice_output["model_height"],
             "max_layers": vari_slice_output["max_layers"],

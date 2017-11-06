@@ -11,7 +11,7 @@ class VariSliceLayersListModel(ListModel):
     AbsoluteHeightRole = Qt.UserRole + 3
     TriangleCountRole = Qt.UserRole + 4
 
-    def __init__(self, layer_data):
+    def __init__(self, layer_data = None):
         super().__init__()
 
         self.addRoleName(self.LayerHeightRole, "layer_height")
@@ -19,7 +19,29 @@ class VariSliceLayersListModel(ListModel):
         self.addRoleName(self.AbsoluteHeightRole, "absolute_height")
         self.addRoleName(self.TriangleCountRole, "triangle_count")
 
-        self.setLayerData(layer_data)
+        self._layers = []
+
+        if layer_data:
+            self.setLayerData(layer_data)
 
     def setLayerData(self, layer_data):
-        self.setItems(layer_data)
+        self._layers = layer_data
+        self._update()
+
+    def _update(self):
+        items = []
+
+        if len(self._layers) == 0:
+            return
+
+        for index, layer in enumerate(self._layers):
+            items.append({
+                "layer_height": layer["layer_height"],
+                "layer_slope": layer["layer_slope"],
+                "absolute_height": layer["absolute_height"],
+                "triangle_count": layer["triangle_count"],
+                "layer_index": index
+            })
+
+        items.sort(key = lambda k: (k["layer_index"]))
+        self.setItems(items)
