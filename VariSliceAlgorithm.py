@@ -10,15 +10,10 @@ from VariSliceUtils import VariSliceUtils
 
 class VariSliceAlgorithm:
 
-    def __init__(self, selected_model):
+    def __init__(self, selected_model, allowed_layer_heights):
 
         # list of allowed layer heights sorted with tallest on top
-        # TODO: make dynamic
-        self._layer_steps = [
-            0.4,
-            0.2,
-            0.1
-        ]
+        self._layer_steps = allowed_layer_heights
 
         self._selected_model = selected_model  # type: SceneNode
         self._triangles = None
@@ -40,6 +35,10 @@ class VariSliceAlgorithm:
     @property
     def triangles(self):
         return self._triangles
+
+    # Update the list of allowed layer height steps
+    def setAllowedLayerHeights(self, layer_heights):
+        self._layer_steps = layer_heights
 
     # Build the layers
     def buildLayers(self):
