@@ -88,8 +88,6 @@ class VariSlice(Tool):
             self.__thread.start()
 
     def _onProcessingFinished(self, vari_slice_output):
-        self._layer_info = VariSliceLayersListModel()
-        self._layer_info.setLayerData(vari_slice_output["layer_info"])
         self._meta_data = {
             "model_height": vari_slice_output["model_height"],
             "max_layers": vari_slice_output["max_layers"],
@@ -97,6 +95,7 @@ class VariSlice(Tool):
             "layer_steps": ", ".join(map(str, vari_slice_output["layer_steps"]))
         }
         self.propertyChanged.emit()
+        self._layer_info.setLayerData(vari_slice_output["layer_info"])
 
     def _variSlice(self):
         print("Starting VariSlice...")
