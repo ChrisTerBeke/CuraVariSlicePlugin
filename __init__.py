@@ -8,7 +8,7 @@ def getMetaData():
         "tool": {
             "name": "VariSlice",
             "description": "Generate quality regions based on mesh properties.",
-            "icon": "varislice_icon.svg",
+            "icon": "varislice.svg",
             "tool_panel": "VariSlice.qml"
         }
     }
