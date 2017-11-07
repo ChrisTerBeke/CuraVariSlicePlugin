@@ -44,6 +44,7 @@ class VariSliceAlgorithm:
         model_height = self._selected_model.getBoundingBox().height
         max_layers = int(model_height / self.minimumLayerHeight)
         triangle_slopes = self._calculateTriangleSlopes()
+        layer_heights = []
         absolute_heights = []
         layer_output = []
         triangles_of_interest = []
@@ -88,6 +89,7 @@ class VariSliceAlgorithm:
 
                 # if it is below the treshold we create the layer for this layer step height
                 if slope_tan == 0 or layer_step / slope_tan <= 0.1 or layer_step == min(self._layer_steps):
+                    layer_heights.append(layer_step)
                     absolute_heights.append(z_level + layer_step)
                     layer_output.append({
                         "layer_height": str(layer_step),
@@ -100,13 +102,19 @@ class VariSliceAlgorithm:
             if len(triangles_of_interest) == 0:
                 break
 
+        # get smallest used layer height
+        min_layer_height = min(layer_heights)
+        max_layers_otherwise = int(model_height / min_layer_height)
+        layer_count_improvement = (max_layers_otherwise - len(layer_heights)) / max_layers_otherwise * 100
+
         # return all output data
         return {
             "layer_info": layer_output,
             "model_height": str(model_height),
-            "max_layers": str(max_layers),
+            "max_layers": str(max_layers_otherwise),
             "total_triangles": str(len(self._triangles)),
-            "layer_steps": self._layer_steps
+            "percentage_improved": str(int(layer_count_improvement)),
+            "layer_steps": numpy.unique(layer_heights)
         }
 
     # Calculates triangles for selected model from vertices and indices

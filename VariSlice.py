@@ -45,15 +45,15 @@ class VariSlice(Tool):
         self.finishedProcessing.connect(self._onProcessingFinished)
 
         # expose needed QML properties
-        self.setExposedProperties("LayerInfo", "ModelHeight", "MaxLayers", "TotalTriangles", "LayerSteps")
+        self.setExposedProperties("LayerInfo", "ModelHeight", "MaxLayers", "TotalTriangles", "LayerSteps", "Finished", "PercentageImproved")
 
     finishedProcessing = Signal()
 
-    def getProcessing(self):
-        return self.__thread is not None
+    def getFinished(self):
+        return self.__thread is None
 
     def getLayerInfo(self):
-        return QVariant(self._layer_info)
+        return self._layer_info
 
     def getModelHeight(self):
         if not self._meta_data:
@@ -75,6 +75,11 @@ class VariSlice(Tool):
             return ""
         return self._meta_data["layer_steps"]
 
+    def getPercentageImproved(self):
+        if not self._meta_data:
+            return ""
+        return self._meta_data["percentage_improved"]
+
     def event(self, event):
         super().event(event)
 
@@ -82,20 +87,24 @@ class VariSlice(Tool):
             self._run(Selection.getSelectedObject(0))
 
     def _run(self, selected_model):
+        self._layer_info = None
         self._selected_model = selected_model
+        self.propertyChanged.emit()
         if self.__thread is None:
             self.__thread = threading.Thread(target = self._variSlice, daemon = True)
             self.__thread.start()
 
     def _onProcessingFinished(self, vari_slice_output):
+        self._layer_info = VariSliceLayersListModel(vari_slice_output["layer_info"])
         self._meta_data = {
             "model_height": vari_slice_output["model_height"],
             "max_layers": vari_slice_output["max_layers"],
             "total_triangles": vari_slice_output["total_triangles"],
+            "percentage_improved": vari_slice_output["percentage_improved"],
             "layer_steps": ", ".join(map(str, vari_slice_output["layer_steps"]))
         }
+        self.__thread = None
         self.propertyChanged.emit()
-        self._layer_info.setLayerData(vari_slice_output["layer_info"])
 
     def _variSlice(self):
         print("Starting VariSlice...")
@@ -104,7 +113,6 @@ class VariSlice(Tool):
         output = self._algorithm_instance.buildLayers()
         print("Finished VariSlice")
         self.finishedProcessing.emit(output)
-        self.__thread = None
 
     # get list of allowed layer heights from available quality profiles
     def _calculateAllowedLayerHeights(self):

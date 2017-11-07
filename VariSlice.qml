@@ -7,8 +7,8 @@ import QtQuick 2.2
 Item {
     id: variSlice
 
-    width: 200
-    height: 200
+    width: 300
+    height: 400
 
     Text {
         id: statusText
@@ -17,7 +17,7 @@ Item {
             top: variSlice.top
         }
 
-        text: UM.ActiveTool.properties.getValue("Processing") ? "Processing..." : "Analysis complete"
+        text: UM.ActiveTool.properties.getValue("Finished") ? "Analysis complete" : "Processing..."
     }
 
     Text {
@@ -27,7 +27,7 @@ Item {
             top: statusText.bottom
         }
 
-        text: "Layers: " + layerInfoList.count + " (down from " + UM.ActiveTool.properties.getValue("MaxLayers") + ")"
+        text: "Layers: " + layerInfoList.count + " (down from " + UM.ActiveTool.properties.getValue("MaxLayers") + "), " + UM.ActiveTool.properties.getValue("PercentageImproved") + "% improved"
     }
 
     Text {
@@ -64,10 +64,10 @@ Item {
         id: layerInfoList
 
         width: 200
-        height: 200
 
         anchors {
             top: layerStepsText.bottom
+            bottom: variSlice.bottom
         }
 
         model: UM.ActiveTool.properties.getValue("LayerInfo")
