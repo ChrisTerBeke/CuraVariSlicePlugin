@@ -84,7 +84,8 @@ class VariSlice(Tool):
         super().event(event)
 
         if (event.type == Event.MouseReleaseEvent or event.type == Event.ToolActivateEvent) and Selection.hasSelection():
-            self._run(Selection.getSelectedObject(0))
+            if not Selection.getSelectedObject(0).hasChildren():
+                self._run(Selection.getSelectedObject(0))
 
     def _run(self, selected_model):
         self._layer_info = None
