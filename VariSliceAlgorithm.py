@@ -3,10 +3,7 @@
 
 import numpy
 
-from UM.Logger import Logger
 from UM.Scene import SceneNode
-
-from VariSliceUtils import VariSliceUtils
 
 class VariSliceAlgorithm:
 
@@ -43,54 +40,63 @@ class VariSliceAlgorithm:
     # Build the layers
     def buildLayers(self):
         self._selected_model.setCalculateBoundingBox(True)  # make sure the bounding box is calculated on the next line
+
         model_height = self._selected_model.getBoundingBox().height
         max_layers = int(model_height / self.minimumLayerHeight)
-
+        triangle_slopes = self._calculateTriangleSlopes()
         absolute_heights = []
         layer_output = []
-        triangle_slopes = numpy.array([])
+        triangles_of_interest = []
+
+        # calculate the minimum and maximum z value per triangle
+        z_levels = self._triangles[::, ::, 2]
+        min_z = z_levels.min(axis=1)
+        max_z = z_levels.max(axis=1)
 
         # keep track of current layer
         z_level = 0
 
-        # calculate the slope of each triangle (as we need them anyways)
-        for index, triangle in numpy.ndenumerate(self._triangles):
-            triangle_slope = VariSliceUtils.findSlope(triangle)
-            triangle_slopes = numpy.append(triangle_slopes, triangle_slope)
-
-        # loop over each potential layer
+        # loop over all potential layers
         for layer_index in range(0, max_layers):
             if layer_index != 0:
-                z_level = round(absolute_heights[layer_index - 1], 2)
+                z_level = absolute_heights[layer_index - 1]
 
-            # we cache the triangles so we have a smaller set to check next layer step (making it faster)
-            triangles_cache = []
-            triangles_of_interest = []
-
-            # loop over allowed layer heights to find intersecting triangles for consideration
+            # check the bounds for each layer height, starting with the largest layer height
             for layer_step in self._layer_steps:
+                lower_bound = z_level
+                upper_bound = z_level + layer_step
 
-                # if no cached triangles from previous layer step, use all triangles
-                if len(triangles_cache) == 0:
-                    triangles_cache = self._triangles
+                # check if the smallest z value in a triangle is within or completely below bounds
+                min_bounds = numpy.where(((min_z >= lower_bound) & (min_z <= upper_bound)) | ((min_z < lower_bound) & (min_z < upper_bound)))
 
-                triangles_of_interest = numpy.where(triangles_cache[:, :, 2] >= z_level)
+                # check if the largest z value in a triangle is within or completely above bounds
+                max_bounds = numpy.where(((max_z <= upper_bound) & (max_z >= lower_bound)) | ((max_z > upper_bound) & (max_z > lower_bound)))
 
-                # cache the triangles for potential next iteration of layer steps
-                triangles_cache = triangles_of_interest
+                # union bounds to find triangles that are interesting for this layer range
+                triangles_of_interest = numpy.intersect1d(min_bounds[0], max_bounds[0])
 
-                # create the layer when it is small enough or we're on the thinnest layer allowed
-                # if VariSliceUtils.isValidLayerHeight(layer_slope, layer_step, 0.1) or layer_step == min(self._layer_steps):
-                #     absolute_heights.append(z_level + layer_step)
-                #     layer_output.append({
-                #         "layer_height": str(layer_step),
-                #         "absolute_height": str(round(z_level + layer_step, 2)),
-                #         "layer_slope": str(round(layer_slope, 2)),
-                #         "triangle_count": str(len(triangles_of_interest))
-                #     })
-                #     break
+                # if no triangles are found stop checking
+                if len(triangles_of_interest) == 0:
+                    break
 
-            # break when we're out of triangles (top of model)
+                # find the slopes for the interesting triangles
+                slopes = numpy.array(triangle_slopes)[triangles_of_interest]
+
+                # calculate the treshold of the steepest triangle
+                minimum_slope = min(slopes)
+                slope_tan = numpy.tan(minimum_slope)
+
+                # if it is below the treshold we create the layer for this layer step height
+                if slope_tan == 0 or layer_step / slope_tan <= 0.1 or layer_step == min(self._layer_steps):
+                    absolute_heights.append(z_level + layer_step)
+                    layer_output.append({
+                        "layer_height": str(layer_step),
+                        "absolute_height": str(round(z_level, 2)),
+                        "layer_slope": str(round(minimum_slope, 2)),
+                        "triangle_count": str(len(triangles_of_interest))
+                    })
+                    break
+
             if len(triangles_of_interest) == 0:
                 break
 
@@ -123,19 +129,22 @@ class VariSliceAlgorithm:
         vertices[:, [1, 2]] = vertices[:, [2, 1]]
         vertices[:, 1] *= -1
 
-        Logger.log("d", vertices)
-
         # convert to multi-dimensional array of triangles of vertices
         self._triangles = numpy.reshape(vertices, [-1, 3, 3])
 
         return self._triangles
 
-    # Appends a triangle to cached triangles
-    def _appendTriangle(self, triangle):
-        if self._triangles is None:
-            self._triangles = numpy.array([triangle])
-        else:
-            self._triangles = numpy.append(self._triangles, [triangle], axis = 1)
+    # calculate the z direction slopes of all triangles
+    def _calculateTriangleSlopes(self):
+        slopes = []
+
+        for triangle in self._triangles:
+            n = numpy.cross(triangle[1] - triangle[0], triangle[2] - triangle[0])
+            normal = n / numpy.linalg.norm(n)
+            z_angle = numpy.arccos(abs(normal[2]))
+            slopes.append(z_angle)
+
+        return slopes
 
     # calculates the minimum and maximum layer heights
     def _calculateMinAndMaxLayerHeights(self):
