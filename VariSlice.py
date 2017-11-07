@@ -90,10 +90,10 @@ class VariSlice(Tool):
     def _run(self, selected_model):
         self._layer_info = None
         self._selected_model = selected_model
-        self.propertyChanged.emit()
         if self.__thread is None:
             self.__thread = threading.Thread(target = self._variSlice, daemon = True)
             self.__thread.start()
+        self.propertyChanged.emit()
 
     def _onProcessingFinished(self, vari_slice_output):
         self._layer_info = VariSliceLayersListModel(vari_slice_output["layer_info"])

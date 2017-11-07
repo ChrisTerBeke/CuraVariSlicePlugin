@@ -28,6 +28,7 @@ Item {
         }
 
         text: "Layers: " + layerInfoList.count + " (down from " + UM.ActiveTool.properties.getValue("MaxLayers") + "), " + UM.ActiveTool.properties.getValue("PercentageImproved") + "% improved"
+        visible: UM.ActiveTool.properties.getValue("Finished")
     }
 
     Text {
@@ -38,6 +39,7 @@ Item {
         }
 
         text: "Model height: " + UM.ActiveTool.properties.getValue("ModelHeight")
+        visible: UM.ActiveTool.properties.getValue("Finished")
     }
 
     Text {
@@ -48,6 +50,7 @@ Item {
         }
 
         text: "Triangles parsed: " + UM.ActiveTool.properties.getValue("TotalTriangles")
+        visible: UM.ActiveTool.properties.getValue("Finished")
     }
 
     Text {
@@ -58,6 +61,7 @@ Item {
         }
 
         text: "Layer steps used: " + UM.ActiveTool.properties.getValue("LayerSteps")
+        visible: UM.ActiveTool.properties.getValue("Finished")
     }
 
     ListView {
@@ -71,6 +75,7 @@ Item {
         }
 
         model: UM.ActiveTool.properties.getValue("LayerInfo")
+        visible: UM.ActiveTool.properties.getValue("Finished")
 
         delegate: Text {
             text: index + ": " + layer_height
