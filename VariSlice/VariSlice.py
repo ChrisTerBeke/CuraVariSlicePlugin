@@ -3,18 +3,16 @@
 
 import threading
 
-from PyQt5.QtCore import QVariant
-
 from UM.Application import Application
-from UM.Signal import Signal
 from UM.Event import Event
-from UM.Tool import Tool
 from UM.Scene.Selection import Selection
+from UM.Signal import Signal
+from UM.Tool import Tool
 
 from cura.Settings.ProfilesModel import ProfilesModel
 
-from VariSliceAlgorithm import VariSliceAlgorithm
-from VariSliceLayersListModel import VariSliceLayersListModel
+from VariSlice.VariSliceAlgorithm import VariSliceAlgorithm
+from VariSlice.VariSliceLayersListModel import VariSliceLayersListModel
 
 class VariSlice(Tool):
 
@@ -104,6 +102,12 @@ class VariSlice(Tool):
             "percentage_improved": vari_slice_output["percentage_improved"],
             "layer_steps": ", ".join(map(str, vari_slice_output["layer_steps"]))
         }
+
+        # Set the settings value so the data is passed to CuraEngine
+        for stack in Application.getInstance().getExtruderManager().getActiveGlobalAndExtruderStacks():
+            stack.setProperty("layer_height_use_variable", "value", True)
+            stack.setProperty("layer_height_variable_heights", "value", vari_slice_output["variable_layer_heights_field"])
+
         self.__thread = None
         self.propertyChanged.emit()
 

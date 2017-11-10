@@ -114,7 +114,8 @@ class VariSliceAlgorithm:
             "max_layers": str(max_layers_otherwise),
             "total_triangles": str(len(self._triangles)),
             "percentage_improved": str(int(layer_count_improvement)),
-            "layer_steps": numpy.unique(layer_heights)
+            "layer_steps": numpy.unique(layer_heights),
+            "variable_layer_heights_field": "[" + ",".join([str(int(layer_height * 1000)) for layer_height in layer_heights]) + "]"
         }
 
     # Calculates triangles for selected model from vertices and indices
